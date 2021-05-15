@@ -76,3 +76,7 @@ dash:
   animation_speed: 30
       
 #   show_author: true
+
+plugins:
+  - liquid-md5
+  - jekyll/tagging
