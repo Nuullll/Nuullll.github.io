@@ -1,5 +1,5 @@
 ---
-layout: post
+layout: cpost
 title:  "Welcome to Jekyll!"
 date:   2021-05-15 15:49:19 +0800
 categories: jekyll update
