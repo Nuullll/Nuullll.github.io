@@ -3,7 +3,7 @@ layout: post
 title:  "Developing a VSCode Extension for LLVM IR analysis"
 date:   2021-05-15 15:49:19 +0800
 tags: llvm VSCode
-description: \!dbg \!42
+description: \%x.next = add i64 \%x, 1, \!dbg \!42
 ---
 This is a plan. I'll update as I go :)
 
@@ -15,7 +15,7 @@ The first feature of my VSCode Extension would be showing up a tooltip expanding
 
 ## Detailed plan
 
-1. Build llvm-project on my laptop
+1. [Build llvm-project on my laptop]({% post_url 2021-05-15-building-llvm-project-with-ninja-on-macos %})
 2. Create a hello-world VSCode Extension
 3. ...
 
