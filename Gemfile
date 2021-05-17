@@ -10,3 +10,6 @@ gem 'jekyll-tagging'  # tags
 # blogging shortcut
 gem 'thor'
 gem 'stringex'
+
+# sitemap
+gem 'jekyll-sitemap'

@@ -23,13 +23,11 @@ email: vfirst218@gmail.com
 description: >- # this means to ignore newlines until "baseurl:"
   404 NOT FOUND
 baseurl: "" # the subpath of your site, e.g. /blog
-url: "https://nuullll.github.io" # the base hostname & protocol for your site, e.g. http://example.com
+url: "https://blog.nuullll.com" # the base hostname & protocol for your site, e.g. http://example.com
 github_username:  Nuullll
 
 # Build settings
 theme: jekyll-dash
-plugins:
-  - jekyll-feed
 
 # Exclude from processing.
 # The following items will not be processed, by default.
@@ -78,5 +76,7 @@ dash:
 #   show_author: true
 
 plugins:
+  - jekyll-feed
   - liquid-md5
   - jekyll/tagging
+  - jekyll-sitemap
