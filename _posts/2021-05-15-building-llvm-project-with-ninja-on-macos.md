@@ -1,9 +1,9 @@
 ---
 layout: post
-title: "Building llvm-project with Ninja on MacOS"
+title: "Building llvm-project with Ninja on MacOS (Big Sur)"
 date: 2021-05-15 22:01:14 +0800
 tags: llvm ninja MacOS
-description: ninja
+description: fatal error \'wchar.h\' file not found
 ---
 ## Building clang
 I just follow the llvm official guide: [Getting the source code and building llvm](https://llvm.org/docs/GettingStarted.html#getting-the-source-code-and-building-llvm).
@@ -130,9 +130,31 @@ clang++ test.cpp
 
 ## "Missing" headers on MacOS
 
+### [TL;DR] Solution
+
+#### Solid solution
+
+Adding this line in your shell startup script (e.g. `~/.bashrc`):
+
+```bash
+export SDKROOT=$(xcrun --show-sdk-path --sdk macosx)
+```
+
+And the built clang starts working!
+
+#### Temporary solution
+
+OR pass the sdk path via `-isysroot` whenever you compile a program with clang:
+
+```bash
+clang++ test.cpp -isysroot $(xcrun --show-sdk-path --sdk macosx)
+```
+
+### Investigation notes
+
 The error log above means:
 1. clang doesn't find `wchar.h` in my enironment: either there's no `wchar.h` on my laptop (which is very unlikely), or the searching path is wrong.
-2. And clang crashes because of the missing of `wchar.h`, which should be a clang bug, as the compiler should NOT crash anyway.
+2. And clang crashes because of the missing of `wchar.h`, which should be a clang bug, as the compiler should NOT crash anyway. (TODO: I should submit a bug report to [Bugzilla](https://bugs.llvm.org/) as the error message suggests, which is out of scope of this post. Hopefully I would write another post about this clang bug soon.)
 
 After googling a bit, I find out the MacOS system headers are no longer placed at `/usr/include`, after Xcode 10 ([release note](https://developer.apple.com/documentation/xcode-release-notes/xcode-10-release-notes#3035624)):
 
@@ -142,7 +164,7 @@ After googling a bit, I find out the MacOS system headers are no longer placed a
 >
 > To make sure that you’re using the intended version of the command line tools, run xcode-select -s or xcode select -s /Library/Developer/CommandLineTools after installing.
 
-Xcode provides with a work around package to install the headers to the base system, however as it says, this package will not be provided in future releases.
+Xcode provides with a work around package to install the headers to the base system, however as it says, this package will not be provided in future releases (really, I didn't find the package in MacOS 11.3.1 Big Sur, Xcode 12.4).
 
 I'm surprised that the llvm-trunk version clang won't work natively on the latest MacOS. So I take a look at how the system-bundled clang (`/usr/bin/c++`) would behave to find the header files.
 
@@ -217,4 +239,41 @@ def usePlatformSdkOnDarwin(config, lit_config):
             config.environment['SDKROOT'] = sdk_path
 ```
 
-TBC...
+Cool. It seems the environment variable `SDKROOT` is exactly what I'm looking for. The sdk path could be obtained by `xcrun --show-sdk-path --sdk macosx`. So just export it in `.bashrc`!
+
+```bash
+export SDKROOT=$(xcrun --show-sdk-path --sdk macosx)
+```
+
+I'm just curious about how clang handles the `SDKROOT` environment. Here is the answer: [Darwin::AddDeploymentTarget()](https://clang.llvm.org/doxygen/Darwin_8cpp_source.html#l01803)
+
+```cpp
+void Darwin::AddDeploymentTarget(DerivedArgList &Args) const {
+  const OptTable &Opts = getDriver().getOpts();
+
+  // Support allowing the SDKROOT environment variable used by xcrun and other
+  // Xcode tools to define the default sysroot, by making it the default for
+  // isysroot.
+  if (const Arg *A = Args.getLastArg(options::OPT_isysroot)) {
+    // Warn if the path does not exist.
+    if (!getVFS().exists(A->getValue()))
+      getDriver().Diag(clang::diag::warn_missing_sysroot) << A->getValue();
+  } else {
+    if (char *env = ::getenv("SDKROOT")) {
+      // We only use this value as the default if it is an absolute path,
+      // exists, and it is not the root path.
+      if (llvm::sys::path::is_absolute(env) && getVFS().exists(env) &&
+          StringRef(env) != "/") {
+        Args.append(Args.MakeSeparateArg(
+            nullptr, Opts.getOption(options::OPT_isysroot), env));
+      }
+    }
+  }
+
+  // ...
+}
+```
+
+So `SDKROOT` envrionment is almost equivalent to the `-isysroot` argument passed to the driver.
+
+Choose whatever suitable for your situation.
