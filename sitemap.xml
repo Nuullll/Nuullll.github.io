@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<url>
+<loc>https://blog.nuullll.com/2021/05/15/developing-a-vscode-extension-for-llvm-ir-analysis.html</loc>
+<lastmod>2021-05-15T07:49:19+00:00</lastmod>
+</url>
+<url>
+<loc>https://blog.nuullll.com/2021/05/15/building-llvm-project-with-ninja-on-macos.html</loc>
+<lastmod>2021-05-15T14:01:14+00:00</lastmod>
+</url>
+<url>
+<loc>https://blog.nuullll.com/</loc>
+</url>
+<url>
+<loc>https://blog.nuullll.com/tag/llvm/</loc>
+</url>
+<url>
+<loc>https://blog.nuullll.com/tag/vscode/</loc>
+</url>
+<url>
+<loc>https://blog.nuullll.com/tag/ninja/</loc>
+</url>
+<url>
+<loc>https://blog.nuullll.com/tag/macos/</loc>
+</url>
+</urlset>
