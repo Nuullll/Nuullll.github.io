@@ -13,3 +13,6 @@ gem 'stringex'
 
 # sitemap
 gem 'jekyll-sitemap'
+
+# github-flavored markdown rendering engine
+gem 'jekyll-commonmark-ghpages'

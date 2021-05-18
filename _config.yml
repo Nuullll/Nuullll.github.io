@@ -75,8 +75,11 @@ dash:
       
 #   show_author: true
 
+markdown: CommonMarkGhPages
+
 plugins:
   - jekyll-feed
   - liquid-md5
   - jekyll/tagging
   - jekyll-sitemap
+  - jekyll-commonmark-ghpages

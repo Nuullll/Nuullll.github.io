@@ -40,7 +40,9 @@ int main() {
 }
 ```
 
-The error log:
+<details>
+<summary>The error log</summary>
+
 ```bash
 clang++ -v
 # clang version 13.0.0 (https://github.com/llvm/llvm-project.git 6418bab6f8827960b9d161f5c9c2b8f9702c80e0)
@@ -127,6 +129,8 @@ clang++ test.cpp
 # InstalledDir: /usr/local/bin
 # clang-13: note: diagnostic msg: Error generating preprocessed source(s).
 ```
+
+</details>
 
 ## "Missing" headers on MacOS
 
