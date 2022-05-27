@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.2.2">Jekyll</generator><link href="https://blog.nuullll.com/feed.xml" rel="self" type="application/atom+xml" /><link href="https://blog.nuullll.com/" rel="alternate" type="text/html" /><updated>2022-05-27T02:59:59+00:00</updated><id>https://blog.nuullll.com/feed.xml</id><title type="html">Nuullll BITS</title><subtitle>404 NOT FOUND</subtitle><entry><title type="html">Building llvm-project with Ninja on MacOS (Big Sur)</title><link href="https://blog.nuullll.com/2021/05/15/building-llvm-project-with-ninja-on-macos.html" rel="alternate" type="text/html" title="Building llvm-project with Ninja on MacOS (Big Sur)" /><published>2021-05-15T14:01:14+00:00</published><updated>2021-05-15T14:01:14+00:00</updated><id>https://blog.nuullll.com/2021/05/15/building-llvm-project-with-ninja-on-macos</id><content type="html" xml:base="https://blog.nuullll.com/2021/05/15/building-llvm-project-with-ninja-on-macos.html"><![CDATA[<h2 id="building-clang">Building clang</h2>
+<p>I just follow the llvm official guide: <a href="https://llvm.org/docs/GettingStarted.html#getting-the-source-code-and-building-llvm">Getting the source code and building llvm</a>.</p>
+<ol>
+<li>Checking out <code>llvm-project</code> using <code>git clone</code> is trivial.</li>
+<li>Configure with CMake</li>
+</ol>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">cd </span>llvm-project <span class="o">&amp;&amp;</span> <span class="nb">mkdir </span>build <span class="o">&amp;&amp;</span> <span class="nb">cd </span>build
+cmake <span class="nt">-G</span> Ninja <span class="nt">-DLLVM_ENABLE_PROJECTS</span><span class="o">=</span><span class="s1">'clang'</span> <span class="nt">-DCMAKE_BUILD_TYPE</span><span class="o">=</span>Release ../llvm
+</code></pre></div></div>
+<p>I enable only the <code>clang</code> target and build a <code>Release</code> version, to minimize both the code size and build time (takes me ~60 mins), since my laptop is a really old one :P</p>
+<ol>
+<li>Build with Ninja</li>
+</ol>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ninja
+</code></pre></div></div>
+<ol start="4">
+<li>Run the test suite</li>
+</ol>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ninja check-all
+<span class="c"># ...</span>
+<span class="c"># Testing Time: 1881.93s</span>
+<span class="c">#   Unsupported      :  1670</span>
+<span class="c">#   Passed           : 69905</span>
+<span class="c">#   Expectedly Failed:   180</span>
+</code></pre></div></div>
+<p>Seems good.</p>
+<p>But something unexpected will always happen: the built clang (in <code>llvm-project/build/bin</code>) couldn't compile the simple hello world cpp program.</p>
+<div class="language-c++ highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// test.cpp</span>
+<span class="cp">#include</span> <span class="cpf">&lt;iostream&gt;</span><span class="cp">
+</span><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">"Hello world"</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+<details>
+<summary>The error log</summary>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>clang++ <span class="nt">-v</span>
+<span class="c"># clang version 13.0.0 (https://github.com/llvm/llvm-project.git 6418bab6f8827960b9d161f5c9c2b8f9702c80e0)</span>
+<span class="c"># Target: x86_64-apple-darwin20.4.0</span>
+<span class="c"># Thread model: posix</span>
+<span class="c"># InstalledDir: /Users/nuullll/Projects/llvm-project/build/bin</span>
+
+clang++ test.cpp
+<span class="c"># In file included from test.cpp:1:</span>
+<span class="c"># In file included from /usr/local/bin/../include/c++/v1/iostream:37:</span>
+<span class="c"># In file included from /usr/local/bin/../include/c++/v1/ios:214:</span>
+<span class="c"># In file included from /usr/local/bin/../include/c++/v1/iosfwd:98:</span>
+<span class="c"># /usr/local/bin/../include/c++/v1/wchar.h:119:15: fatal error: 'wchar.h' file not found</span>
+<span class="c"># #include_next &lt;wchar.h&gt;</span>
+<span class="c">#               ^~~~~~~~~</span>
+<span class="c"># Assertion failed: (!CodeSynthesisContexts.empty() &amp;&amp; "Cannot perform an instantiation without some context on the " "instantiation stack"), function SubstType, file /Users/nuullll/Projects/llvm-project/clang/lib/Sema/SemaTemplateInstantiate.cpp, line 2071.</span>
+<span class="c"># PLEASE submit a bug report to https://bugs.llvm.org/ and include the crash backtrace, preprocessed source, and associated run script.</span>
+<span class="c"># Stack dump:</span>
+<span class="c"># 0.      Program arguments: /usr/local/bin/clang-13 -cc1 -triple x86_64-apple-macosx11.0.0 -Wundef-prefix=TARGET_OS_ -Werror=undef-prefix -Wdeprecated-objc-isa-usage -Werror=deprecated-objc-isa-usage -emit-obj -mrelax-all --mrelax-relocations -disable-free -main-file-name test.cpp -mrelocation-model pic -pic-level 2 -mframe-pointer=all -fno-rounding-math -munwind-tables -fcompatibility-qualified-id-block-type-checking -fvisibility-inlines-hidden-static-local-var -target-cpu penryn -tune-cpu generic -debugger-tuning=lldb -target-linker-version 556.6 -fcoverage-compilation-dir=/Users/nuullll/Projects/playground/cpp -resource-dir /usr/local/lib/clang/13.0.0 -stdlib=libc++ -internal-isystem /usr/local/bin/../include/c++/v1 -internal-isystem /usr/local/include -internal-isystem /usr/local/lib/clang/13.0.0/include -internal-externc-isystem /usr/include -fdeprecated-macro -fdebug-compilation-dir=/Users/nuullll/Projects/playground/cpp -ferror-limit 19 -stack-protector 1 -fblocks -fencode-extended-block-signature -fregister-global-dtors-with-atexit -fgnuc-version=4.2.1 -fcxx-exceptions -fexceptions -fmax-type-align=16 -fcolor-diagnostics -D__GCC_HAVE_DWARF2_CFI_ASM=1 -o /var/folders/33/3kb7_j8x61q5l57tn2wk4xl80000gn/T/test-25fb8d.o -x c++ test.cpp</span>
+<span class="c"># 1.      /usr/local/bin/../include/c++/v1/type_traits:1693:4: current parser token ':'</span>
+<span class="c"># 2.      /usr/local/bin/../include/c++/v1/type_traits:427:1 &lt;Spelling=/usr/local/bin/../include/c++/v1/__config:789:37&gt;: parsing namespace 'std'</span>
+<span class="c"># 3.      /usr/local/bin/../include/c++/v1/type_traits:427:1 &lt;Spelling=/usr/local/bin/../include/c++/v1/__config:789:60&gt;: parsing namespace 'std::__1'</span>
+<span class="c"># Stack dump without symbol names (ensure you have llvm-symbolizer in your PATH or set the environment var `LLVM_SYMBOLIZER_PATH` to point to it):</span>
+<span class="c"># 0  clang-13                 0x000000010491bbdb llvm::sys::PrintStackTrace(llvm::raw_ostream&amp;, int) + 43</span>
+<span class="c"># 1  clang-13                 0x000000010491a858 llvm::sys::RunSignalHandlers() + 248</span>
+<span class="c"># 2  clang-13                 0x000000010491c247 SignalHandler(int) + 295</span>
+<span class="c"># 3  libsystem_platform.dylib 0x00007fff20525d7d _sigtramp + 29</span>
+<span class="c"># 4  libsystem_platform.dylib 0x0000000000000001 _sigtramp + 18446603339973894817</span>
+<span class="c"># 5  libsystem_c.dylib        0x00007fff20435411 abort + 120</span>
+<span class="c"># 6  libsystem_c.dylib        0x00007fff204347e8 err + 0</span>
+<span class="c"># 7  clang-13                 0x000000010895ce43 clang::Sema::SubstType(clang::TypeSourceInfo*, clang::MultiLevelTemplateArgumentList const&amp;, clang::SourceLocation, clang::DeclarationName, bool) (.cold.1) + 35</span>
+<span class="c"># 8  clang-13                 0x0000000106a458b1 clang::Sema::SubstType(clang::TypeSourceInfo*, clang::MultiLevelTemplateArgumentList const&amp;, clang::SourceLocation, clang::DeclarationName, bool) + 161</span>
+<span class="c"># 9  clang-13                 0x0000000106a4ceef clang::Sema::SubstParmVarDecl(clang::ParmVarDecl*, clang::MultiLevelTemplateArgumentList const&amp;, int, llvm::Optional&lt;unsigned int&gt;, bool) + 367</span>
+<span class="c"># 10 clang-13                 0x0000000106a4e21a clang::TreeTransform&lt;(anonymous namespace)::TemplateInstantiator&gt;::TransformFunctionTypeParams(clang::SourceLocation, llvm::ArrayRef&lt;clang::ParmVarDecl*&gt;, clang::QualType const*, clang::FunctionType::ExtParameterInfo const*, llvm::SmallVectorImpl&lt;clang::QualType&gt;&amp;, llvm::SmallVectorImpl&lt;clang::ParmVarDecl*&gt;*, clang::Sema::ExtParameterInfoBuilder&amp;) + 1098</span>
+<span class="c"># 11 clang-13                 0x0000000106a74809 clang::QualType clang::TreeTransform&lt;(anonymous namespace)::TemplateInstantiator&gt;::TransformFunctionProtoType&lt;clang::TreeTransform&lt;(anonymous namespace)::TemplateInstantiator&gt;::TransformFunctionProtoType(clang::TypeLocBuilder&amp;, clang::FunctionProtoTypeLoc)::'lambda'(clang::FunctionProtoType::ExceptionSpecInfo&amp;, bool&amp;)&gt;(clang::TypeLocBuilder&amp;, clang::FunctionProtoTypeLoc, clang::CXXRecordDecl*, clang::Qualifiers, clang::TreeTransform&lt;(anonymous namespace)::TemplateInstantiator&gt;::TransformFunctionProtoType(clang::TypeLocBuilder&amp;, clang::FunctionProtoTypeLoc)::'lambda'(clang::FunctionProtoType::ExceptionSpecInfo&amp;, bool&amp;)) + 1097</span>
+<span class="c"># 12 clang-13                 0x0000000106a48b7c clang::TreeTransform&lt;(anonymous namespace)::TemplateInstantiator&gt;::TransformType(clang::TypeLocBuilder&amp;, clang::TypeLoc) + 11340</span>
+<span class="c"># 13 clang-13                 0x0000000106a4655c clang::TreeTransform&lt;(anonymous namespace)::TemplateInstantiator&gt;::TransformType(clang::TypeLocBuilder&amp;, clang::TypeLoc) + 1580</span>
+<span class="c"># 14 clang-13                 0x0000000106a4640b clang::TreeTransform&lt;(anonymous namespace)::TemplateInstantiator&gt;::TransformType(clang::TypeLocBuilder&amp;, clang::TypeLoc) + 1243</span>
+<span class="c"># 15 clang-13                 0x0000000106a45c17 clang::TreeTransform&lt;(anonymous namespace)::TemplateInstantiator&gt;::TransformType(clang::TypeSourceInfo*) + 199</span>
+<span class="c"># 16 clang-13                 0x0000000106a6bcce clang::TreeTransform&lt;(anonymous namespace)::TemplateInstantiator&gt;::TransformCXXNamedCastExpr(clang::CXXNamedCastExpr*) + 30</span>
+<span class="c"># 17 clang-13                 0x0000000106a5edd7 clang::TreeTransform&lt;(anonymous namespace)::TemplateInstantiator&gt;::TransformCallExpr(clang::CallExpr*) + 71</span>
+<span class="c"># 18 clang-13                 0x0000000106a469ef clang::TreeTransform&lt;(anonymous namespace)::TemplateInstantiator&gt;::TransformType(clang::TypeLocBuilder&amp;, clang::TypeLoc) + 2751</span>
+<span class="c"># 19 clang-13                 0x0000000106a45c17 clang::TreeTransform&lt;(anonymous namespace)::TemplateInstantiator&gt;::TransformType(clang::TypeSourceInfo*) + 199</span>
+<span class="c"># 20 clang-13                 0x0000000106a6a9fe clang::TreeTransform&lt;(anonymous namespace)::TemplateInstantiator&gt;::TransformTemplateArgument(clang::TemplateArgumentLoc const&amp;, clang::TemplateArgumentLoc&amp;, bool) + 270</span>
+<span class="c"># 21 clang-13                 0x0000000106a53b57 bool clang::TreeTransform&lt;(anonymous namespace)::TemplateInstantiator&gt;::TransformTemplateArguments&lt;clang::TemplateArgumentLoc const*&gt;(clang::TemplateArgumentLoc const*, clang::TemplateArgumentLoc const*, clang::TemplateArgumentListInfo&amp;, bool) + 583</span>
+<span class="c"># 22 clang-13                 0x0000000106a4d861 clang::Sema::Subst(clang::TemplateArgumentLoc const*, unsigned int, clang::TemplateArgumentListInfo&amp;, clang::MultiLevelTemplateArgumentList const&amp;) + 81</span>
+<span class="c"># 23 clang-13                 0x0000000106a3c2cf std::__1::enable_if&lt;IsPartialSpecialization&lt;clang::ClassTemplatePartialSpecializationDecl&gt;::value, clang::Sema::TemplateDeductionResult&gt;::type FinishTemplateArgumentDeduction&lt;clang::ClassTemplatePartialSpecializationDecl&gt;(clang::Sema&amp;, clang::ClassTemplatePartialSpecializationDecl*, bool, clang::TemplateArgumentList const&amp;, llvm::SmallVectorImpl&lt;clang::DeducedTemplateArgument&gt;&amp;, clang::sema::TemplateDeductionInfo&amp;) + 1695</span>
+<span class="c"># 24 clang-13                 0x0000000106a3f382 void llvm::function_ref&lt;void ()&gt;::callback_fn&lt;bool isAtLeastAsSpecializedAs&lt;clang::ClassTemplatePartialSpecializationDecl&gt;(clang::Sema&amp;, clang::QualType, clang::QualType, clang::ClassTemplatePartialSpecializationDecl*, clang::sema::TemplateDeductionInfo&amp;)::'lambda'()&gt;(long) + 66</span>
+<span class="c"># 25 clang-13                 0x000000010634f96e clang::Sema::runWithSufficientStackSpace(clang::SourceLocation, llvm::function_ref&lt;void ()&gt;) + 46</span>
+<span class="c"># 26 clang-13                 0x00000001069f1f4c bool isAtLeastAsSpecializedAs&lt;clang::ClassTemplatePartialSpecializationDecl&gt;(clang::Sema&amp;, clang::QualType, clang::QualType, clang::ClassTemplatePartialSpecializationDecl*, clang::sema::TemplateDeductionInfo&amp;) + 844</span>
+<span class="c"># 27 clang-13                 0x00000001069f23b1 clang::Sema::isMoreSpecializedThanPrimary(clang::ClassTemplatePartialSpecializationDecl*, clang::sema::TemplateDeductionInfo&amp;) + 1009</span>
+<span class="c"># 28 clang-13                 0x0000000106958cf3 clang::Sema::CheckTemplatePartialSpecialization(clang::ClassTemplatePartialSpecializationDecl*) + 323</span>
+<span class="c"># 29 clang-13                 0x0000000106965ea3 clang::Sema::ActOnClassTemplateSpecialization(clang::Scope*, unsigned int, clang::Sema::TagUseKind, clang::SourceLocation, clang::SourceLocation, clang::CXXScopeSpec&amp;, clang::TemplateIdAnnotation&amp;, clang::ParsedAttributesView const&amp;, llvm::MutableArrayRef&lt;clang::TemplateParameterList*&gt;, clang::Sema::SkipBodyInfo*) + 4435</span>
+<span class="c"># 30 clang-13                 0x0000000106241078 clang::Parser::ParseClassSpecifier(clang::tok::TokenKind, clang::SourceLocation, clang::DeclSpec&amp;, clang::Parser::ParsedTemplateInfo const&amp;, clang::AccessSpecifier, bool, clang::Parser::DeclSpecContext, clang::ParsedAttributesWithRange&amp;) + 9352</span>
+<span class="c"># 31 clang-13                 0x000000010621b08f clang::Parser::ParseDeclarationSpecifiers(clang::DeclSpec&amp;, clang::Parser::ParsedTemplateInfo const&amp;, clang::AccessSpecifier, clang::Parser::DeclSpecContext, clang::Parser::LateParsedAttrList*) + 991</span>
+<span class="c"># 32 clang-13                 0x00000001062cfbc0 clang::Parser::ParseSingleDeclarationAfterTemplate(clang::DeclaratorContext, clang::Parser::ParsedTemplateInfo const&amp;, clang::ParsingDeclRAIIObject&amp;, clang::SourceLocation&amp;, clang::ParsedAttributes&amp;, clang::AccessSpecifier) + 928</span>
+<span class="c"># 33 clang-13                 0x00000001062ceee1 clang::Parser::ParseTemplateDeclarationOrSpecialization(clang::DeclaratorContext, clang::SourceLocation&amp;, clang::ParsedAttributes&amp;, clang::AccessSpecifier) + 2161</span>
+<span class="c"># 34 clang-13                 0x00000001062ce4a9 clang::Parser::ParseDeclarationStartingWithTemplate(clang::DeclaratorContext, clang::SourceLocation&amp;, clang::ParsedAttributes&amp;, clang::AccessSpecifier) + 329</span>
+<span class="c"># 35 clang-13                 0x000000010621a566 clang::Parser::ParseDeclaration(clang::DeclaratorContext, clang::SourceLocation&amp;, clang::ParsedAttributesWithRange&amp;, clang::SourceLocation*) + 694</span>
+<span class="c"># 36 clang-13                 0x00000001062e2c6e clang::Parser::ParseExternalDeclaration(clang::ParsedAttributesWithRange&amp;, clang::ParsingDeclSpec*) + 190</span>
+<span class="c"># 37 clang-13                 0x000000010623911a clang::Parser::ParseInnerNamespace(llvm::SmallVector&lt;clang::Parser::InnerNamespaceInfo, 4u&gt; const&amp;, unsigned int, clang::SourceLocation&amp;, clang::ParsedAttributes&amp;, clang::BalancedDelimiterTracker&amp;) + 186</span>
+<span class="c"># 38 clang-13                 0x0000000106238aa8 clang::Parser::ParseNamespace(clang::DeclaratorContext, clang::SourceLocation&amp;, clang::SourceLocation) + 7912</span>
+<span class="c"># 39 clang-13                 0x000000010621a630 clang::Parser::ParseDeclaration(clang::DeclaratorContext, clang::SourceLocation&amp;, clang::ParsedAttributesWithRange&amp;, clang::SourceLocation*) + 896</span>
+<span class="c"># 40 clang-13                 0x00000001062e2c6e clang::Parser::ParseExternalDeclaration(clang::ParsedAttributesWithRange&amp;, clang::ParsingDeclSpec*) + 190</span>
+<span class="c"># 41 clang-13                 0x000000010623911a clang::Parser::ParseInnerNamespace(llvm::SmallVector&lt;clang::Parser::InnerNamespaceInfo, 4u&gt; const&amp;, unsigned int, clang::SourceLocation&amp;, clang::ParsedAttributes&amp;, clang::BalancedDelimiterTracker&amp;) + 186</span>
+<span class="c"># 42 clang-13                 0x0000000106238aa8 clang::Parser::ParseNamespace(clang::DeclaratorContext, clang::SourceLocation&amp;, clang::SourceLocation) + 7912</span>
+<span class="c"># 43 clang-13                 0x000000010621a630 clang::Parser::ParseDeclaration(clang::DeclaratorContext, clang::SourceLocation&amp;, clang::ParsedAttributesWithRange&amp;, clang::SourceLocation*) + 896</span>
+<span class="c"># 44 clang-13                 0x00000001062e2c6e clang::Parser::ParseExternalDeclaration(clang::ParsedAttributesWithRange&amp;, clang::ParsingDeclSpec*) + 190</span>
+<span class="c"># 45 clang-13                 0x00000001062e1421 clang::Parser::ParseTopLevelDecl(clang::OpaquePtr&lt;clang::DeclGroupRef&gt;&amp;, bool) + 2113</span>
+<span class="c"># 46 clang-13                 0x00000001062075dd clang::ParseAST(clang::Sema&amp;, bool, bool) + 509</span>
+<span class="c"># 47 clang-13                 0x000000010528add9 clang::FrontendAction::Execute() + 169</span>
+<span class="c"># 48 clang-13                 0x00000001051f4de4 clang::CompilerInstance::ExecuteAction(clang::FrontendAction&amp;) + 948</span>
+<span class="c"># 49 clang-13                 0x000000010530a193 clang::ExecuteCompilerInvocation(clang::CompilerInstance*) + 1731</span>
+<span class="c"># 50 clang-13                 0x0000000102593cc3 cc1_main(llvm::ArrayRef&lt;char const*&gt;, char const*, void*) + 2531</span>
+<span class="c"># 51 clang-13                 0x000000010259154b ExecuteCC1Tool(llvm::SmallVectorImpl&lt;char const*&gt;&amp;) + 379</span>
+<span class="c"># 52 clang-13                 0x000000010259109e main + 12126</span>
+<span class="c"># 53 libdyld.dylib            0x00007fff204fbf3d start + 1</span>
+<span class="c"># 54 libdyld.dylib            0x000000000000003e start + 18446603339974066434</span>
+<span class="c"># clang-13: error: unable to execute command: Abort trap: 6</span>
+<span class="c"># clang-13: error: clang frontend command failed due to signal (use -v to see invocation)</span>
+<span class="c"># clang version 13.0.0 (https://github.com/llvm/llvm-project.git aab81c2f40d2098f9014473a1e7c8fb7b074360b)</span>
+<span class="c"># Target: x86_64-apple-darwin20.4.0</span>
+<span class="c"># Thread model: posix</span>
+<span class="c"># InstalledDir: /usr/local/bin</span>
+<span class="c"># clang-13: note: diagnostic msg: Error generating preprocessed source(s).</span>
+</code></pre></div></div>
+</details>
+<h2 id="quotmissingquot-headers-on-macos">&quot;Missing&quot; headers on MacOS</h2>
+<h3 id="tldr-solution">[TL;DR] Solution</h3>
+<h4 id="solid-solution">Solid solution</h4>
+<p>Adding this line in your shell startup script (e.g. <code>~/.bashrc</code>):</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">export </span><span class="nv">SDKROOT</span><span class="o">=</span><span class="si">$(</span>xcrun <span class="nt">--show-sdk-path</span> <span class="nt">--sdk</span> macosx<span class="si">)</span>
+</code></pre></div></div>
+<p>And the built clang starts working!</p>
+<h4 id="temporary-solution">Temporary solution</h4>
+<p>OR pass the sdk path via <code>-isysroot</code> whenever you compile a program with clang:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>clang++ test.cpp <span class="nt">-isysroot</span> <span class="si">$(</span>xcrun <span class="nt">--show-sdk-path</span> <span class="nt">--sdk</span> macosx<span class="si">)</span>
+</code></pre></div></div>
+<h3 id="investigation-notes">Investigation notes</h3>
+<p>The error log above means:</p>
+<ol>
+<li>clang doesn't find <code>wchar.h</code> in my enironment: either there's no <code>wchar.h</code> on my laptop (which is very unlikely), or the searching path is wrong.</li>
+<li>And clang crashes because of the missing of <code>wchar.h</code>, which should be a clang bug, as the compiler should NOT crash anyway. (TODO: I should submit a bug report to <a href="https://bugs.llvm.org/">Bugzilla</a> as the error message suggests, which is out of scope of this post. Hopefully I would write another post about this clang bug soon.)</li>
+</ol>
+<p>After googling a bit, I find out the MacOS system headers are no longer placed at <code>/usr/include</code>, after Xcode 10 (<a href="https://developer.apple.com/documentation/xcode-release-notes/xcode-10-release-notes#3035624">release note</a>):</p>
+<blockquote>
+<p>The command line tools will search the SDK for system headers by default. However, some software may fail to build correctly against the SDK and require macOS headers to be installed in the base system under /usr/include. If you are the maintainer of such software, we encourage you to update your project to work with the SDK or file a bug report for issues that are preventing you from doing so. As a workaround, an extra package is provided which will install the headers to the base system. In a future release, this package will no longer be provided. You can find this package at:</p>
+<p>/Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg</p>
+<p>To make sure that you’re using the intended version of the command line tools, run xcode-select -s or xcode select -s /Library/Developer/CommandLineTools after installing.</p>
+</blockquote>
+<p>Xcode provides with a work around package to install the headers to the base system, however as it says, this package will not be provided in future releases (really, I didn't find the package in MacOS 11.3.1 Big Sur, Xcode 12.4).</p>
+<p>I'm surprised that the llvm-trunk version clang won't work natively on the latest MacOS. So I take a look at how the system-bundled clang (<code>/usr/bin/c++</code>) would behave to find the header files.</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>c++ <span class="nt">-v</span>
+<span class="c"># Apple clang version 12.0.0 (clang-1200.0.32.29)</span>
+<span class="c"># Target: x86_64-apple-darwin20.4.0</span>
+<span class="c"># Thread model: posix</span>
+<span class="c"># InstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin</span>
+
+c++ test.cpp <span class="o">&amp;&amp;</span> ./a.out
+<span class="c"># Hello world</span>
+</code></pre></div></div>
+<p>Alright, it works (it is an &quot;Apple clang&quot;, instead of a normal &quot;clang&quot;). Take another look at the detailed compilation flags:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>c++ test.cpp <span class="nt">-v</span>
+<span class="c"># Apple clang version 12.0.0 (clang-1200.0.32.29)</span>
+<span class="c"># Target: x86_64-apple-darwin20.4.0</span>
+<span class="c"># Thread model: posix</span>
+<span class="c"># InstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin</span>
+<span class="c">#  "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang" -cc1 -triple x86_64-apple-macosx11.0.0 -Wdeprecated-objc-isa-usage -Werror=deprecated-objc-isa-usage -Werror=implicit-function-declaration -emit-obj -mrelax-all -disable-free -disable-llvm-verifier -discard-value-names -main-file-name test.cpp -mrelocation-model pic -pic-level 2 -mthread-model posix -mframe-pointer=all -fno-strict-return -masm-verbose -munwind-tables -target-sdk-version=11.3 -target-cpu penryn -dwarf-column-info -debugger-tuning=lldb -target-linker-version 609.8 -v -resource-dir /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/12.0.0 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk -I/usr/local/include -stdlib=libc++ -internal-isystem /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1 -internal-isystem /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/local/include -internal-isystem /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/12.0.0/include -internal-externc-isystem /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include -internal-externc-isystem /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include -Wno-reorder-init-list -Wno-implicit-int-float-conversion -Wno-c99-designator -Wno-final-dtor-non-final-class -Wno-extra-semi-stmt -Wno-misleading-indentation -Wno-quoted-include-in-framework-header -Wno-implicit-fallthrough -Wno-enum-enum-conversion -Wno-enum-float-conversion -fdeprecated-macro -fdebug-compilation-dir /Users/nuullll/Projects/playground/cpp -ferror-limit 19 -fmessage-length 183 -stack-protector 1 -fstack-check -mdarwin-stkchk-strong-link -fblocks -fencode-extended-block-signature -fregister-global-dtors-with-atexit -fgnuc-version=4.2.1 -fobjc-runtime=macosx-11.0.0 -fcxx-exceptions -fexceptions -fmax-type-align=16 -fdiagnostics-show-option -fcolor-diagnostics -o /var/folders/33/3kb7_j8x61q5l57tn2wk4xl80000gn/T/test-d859b9.o -x c++ test.cpp</span>
+<span class="c"># clang -cc1 version 12.0.0 (clang-1200.0.32.29) default target x86_64-apple-darwin20.4.0</span>
+<span class="c"># ignoring nonexistent directory "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/local/include"</span>
+<span class="c"># ignoring nonexistent directory "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/Library/Frameworks"</span>
+<span class="c"># #include "..." search starts here:</span>
+<span class="c"># #include &lt;...&gt; search starts here:</span>
+<span class="c">#  /usr/local/include</span>
+<span class="c">#  /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1</span>
+<span class="c">#  /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/12.0.0/include</span>
+<span class="c">#  /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include</span>
+<span class="c">#  /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include</span>
+<span class="c">#  /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks (framework directory)</span>
+<span class="c"># End of search list.</span>
+<span class="c">#  "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld" -demangle -lto_library /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/libLTO.dylib -no_deduplicate -dynamic -arch x86_64 -platform_version macos 11.0.0 11.3 -syslibroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk -o a.out -L/usr/local/lib /var/folders/33/3kb7_j8x61q5l57tn2wk4xl80000gn/T/test-d859b9.o -lc++ -lSystem /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/12.0.0/lib/darwin/libclang_rt.osx.a</span>
+</code></pre></div></div>
+<p>Now it starts to make sense. The system clang searches the CommandLineTools/Xcode.app paths because the driver passes a bunch of &quot;-isysroot&quot;/&quot;-internal-isystem&quot; flags to the compiler. Adding the &quot;-isysroot&quot; argument makes the built clang work again!</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>clang++ test.cpp <span class="nt">-isysroot</span> /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
+</code></pre></div></div>
+<p>But it is too wordy for compiling a hello-world cpp program, right? Finally, I notice something useful when doing <code>ninja check-all</code>:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">[</span>724/725] Running all regression tests
+llvm-lit: /Users/nuullll/Projects/llvm-project/llvm/utils/lit/lit/llvm/config.py:428: note: using clang: /Users/nuullll/Projects/llvm-project/build/bin/clang
+llvm-lit: /Users/nuullll/Projects/llvm-project/llvm/utils/lit/lit/util.py:399: note: using SDKROOT: <span class="s1">'/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX11.1.sdk'</span>
+llvm-lit: /Users/nuullll/Projects/llvm-project/build/utils/lit/tests/lit.cfg:89: warning: Setting a <span class="nb">timeout </span>per <span class="nb">test </span>not supported. Requires the Python psutil module but it could not be found. Try installing it via pip or via your operating system<span class="s1">'s package manager.
+ Some tests will be skipped and the --timeout command line argument will not work.
+</span></code></pre></div></div>
+<p><code>llvm-lit</code> is using <code>SDKROOT</code> for this! Let's see what happens in <code>util.py:399</code>:</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">usePlatformSdkOnDarwin</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">lit_config</span><span class="p">):</span>
+    <span class="c1"># On Darwin, support relocatable SDKs by providing Clang with a
+</span>    <span class="c1"># default system root path.
+</span>    <span class="k">if</span> <span class="s">'darwin'</span> <span class="ow">in</span> <span class="n">config</span><span class="p">.</span><span class="n">target_triple</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">cmd</span> <span class="o">=</span> <span class="n">subprocess</span><span class="p">.</span><span class="n">Popen</span><span class="p">([</span><span class="s">'xcrun'</span><span class="p">,</span> <span class="s">'--show-sdk-path'</span><span class="p">,</span> <span class="s">'--sdk'</span><span class="p">,</span> <span class="s">'macosx'</span><span class="p">],</span>
+                                   <span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="p">.</span><span class="n">PIPE</span><span class="p">,</span> <span class="n">stderr</span><span class="o">=</span><span class="n">subprocess</span><span class="p">.</span><span class="n">PIPE</span><span class="p">)</span>
+            <span class="n">out</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">cmd</span><span class="p">.</span><span class="n">communicate</span><span class="p">()</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">out</span><span class="p">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="n">cmd</span><span class="p">.</span><span class="n">wait</span><span class="p">()</span>
+        <span class="k">except</span> <span class="nb">OSError</span><span class="p">:</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="k">if</span> <span class="n">res</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">out</span><span class="p">:</span>
+            <span class="n">sdk_path</span> <span class="o">=</span> <span class="n">out</span><span class="p">.</span><span class="n">decode</span><span class="p">()</span>
+            <span class="n">lit_config</span><span class="p">.</span><span class="n">note</span><span class="p">(</span><span class="s">'using SDKROOT: %r'</span> <span class="o">%</span> <span class="n">sdk_path</span><span class="p">)</span>
+            <span class="n">config</span><span class="p">.</span><span class="n">environment</span><span class="p">[</span><span class="s">'SDKROOT'</span><span class="p">]</span> <span class="o">=</span> <span class="n">sdk_path</span>
+</code></pre></div></div>
+<p>Cool. It seems the environment variable <code>SDKROOT</code> is exactly what I'm looking for. The sdk path could be obtained by <code>xcrun --show-sdk-path --sdk macosx</code>. So just export it in <code>.bashrc</code>!</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">export </span><span class="nv">SDKROOT</span><span class="o">=</span><span class="si">$(</span>xcrun <span class="nt">--show-sdk-path</span> <span class="nt">--sdk</span> macosx<span class="si">)</span>
+</code></pre></div></div>
+<p>I'm just curious about how clang handles the <code>SDKROOT</code> environment. Here is the answer: <a href="https://clang.llvm.org/doxygen/Darwin_8cpp_source.html#l01803">Darwin::AddDeploymentTarget()</a></p>
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">void</span> <span class="n">Darwin</span><span class="o">::</span><span class="n">AddDeploymentTarget</span><span class="p">(</span><span class="n">DerivedArgList</span> <span class="o">&amp;</span><span class="n">Args</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
+  <span class="k">const</span> <span class="n">OptTable</span> <span class="o">&amp;</span><span class="n">Opts</span> <span class="o">=</span> <span class="n">getDriver</span><span class="p">().</span><span class="n">getOpts</span><span class="p">();</span>
+
+  <span class="c1">// Support allowing the SDKROOT environment variable used by xcrun and other</span>
+  <span class="c1">// Xcode tools to define the default sysroot, by making it the default for</span>
+  <span class="c1">// isysroot.</span>
+  <span class="k">if</span> <span class="p">(</span><span class="k">const</span> <span class="n">Arg</span> <span class="o">*</span><span class="n">A</span> <span class="o">=</span> <span class="n">Args</span><span class="p">.</span><span class="n">getLastArg</span><span class="p">(</span><span class="n">options</span><span class="o">::</span><span class="n">OPT_isysroot</span><span class="p">))</span> <span class="p">{</span>
+    <span class="c1">// Warn if the path does not exist.</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">getVFS</span><span class="p">().</span><span class="n">exists</span><span class="p">(</span><span class="n">A</span><span class="o">-&gt;</span><span class="n">getValue</span><span class="p">()))</span>
+      <span class="n">getDriver</span><span class="p">().</span><span class="n">Diag</span><span class="p">(</span><span class="n">clang</span><span class="o">::</span><span class="n">diag</span><span class="o">::</span><span class="n">warn_missing_sysroot</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="n">A</span><span class="o">-&gt;</span><span class="n">getValue</span><span class="p">();</span>
+  <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="n">env</span> <span class="o">=</span> <span class="o">::</span><span class="n">getenv</span><span class="p">(</span><span class="s">"SDKROOT"</span><span class="p">))</span> <span class="p">{</span>
+      <span class="c1">// We only use this value as the default if it is an absolute path,</span>
+      <span class="c1">// exists, and it is not the root path.</span>
+      <span class="k">if</span> <span class="p">(</span><span class="n">llvm</span><span class="o">::</span><span class="n">sys</span><span class="o">::</span><span class="n">path</span><span class="o">::</span><span class="n">is_absolute</span><span class="p">(</span><span class="n">env</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="n">getVFS</span><span class="p">().</span><span class="n">exists</span><span class="p">(</span><span class="n">env</span><span class="p">)</span> <span class="o">&amp;&amp;</span>
+          <span class="n">StringRef</span><span class="p">(</span><span class="n">env</span><span class="p">)</span> <span class="o">!=</span> <span class="s">"/"</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">Args</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="n">Args</span><span class="p">.</span><span class="n">MakeSeparateArg</span><span class="p">(</span>
+            <span class="nb">nullptr</span><span class="p">,</span> <span class="n">Opts</span><span class="p">.</span><span class="n">getOption</span><span class="p">(</span><span class="n">options</span><span class="o">::</span><span class="n">OPT_isysroot</span><span class="p">),</span> <span class="n">env</span><span class="p">));</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+
+  <span class="c1">// ...</span>
+<span class="p">}</span>
+</code></pre></div></div>
+<p>So <code>SDKROOT</code> envrionment is almost equivalent to the <code>-isysroot</code> argument passed to the driver.</p>
+<p>Choose whatever suitable for your situation.</p>]]></content><author><name></name></author><category term="llvm" /><category term="ninja" /><category term="MacOS" /><summary type="html"><![CDATA[fatal error \'wchar.h\' file not found]]></summary></entry><entry><title type="html">Developing a VSCode Extension for LLVM IR analysis</title><link href="https://blog.nuullll.com/2021/05/15/developing-a-vscode-extension-for-llvm-ir-analysis.html" rel="alternate" type="text/html" title="Developing a VSCode Extension for LLVM IR analysis" /><published>2021-05-15T07:49:19+00:00</published><updated>2021-05-15T07:49:19+00:00</updated><id>https://blog.nuullll.com/2021/05/15/developing-a-vscode-extension-for-llvm-ir-analysis</id><content type="html" xml:base="https://blog.nuullll.com/2021/05/15/developing-a-vscode-extension-for-llvm-ir-analysis.html"><![CDATA[<p>This is a plan. I'll update as I go :)</p>
+<p>As a compiler engineer, I have to dive into LLVM IR details to figure out what's wrong with our magical compiler. Sometimes the IR file (<code>.ll</code>) is extremely compilcated (up to 100k lines), especially when I'm dealing with Debug Info. A common scenario is that the content of a <a href="https://llvm.org/docs/LangRef.html#metadata">metadata</a> node attached to an instruction, locates at the very end of the <code>.ll</code> file. I have to jump back and forth frequently in the editor to know what exactly each metadata means, which is super annoying :(</p>
+<p>Ah, I use VSCode as the editor bascially because <del>I can't figure out how to exit vim</del> of its remote developement feature. So this is the initial motivation of developing a VSCode Extension to ease the analysis effort on LLVM IR.</p>
+<p>The first feature of my VSCode Extension would be showing up a tooltip expanding the metadata definition.</p>
+<h2 id="detailed-plan">Detailed plan</h2>
+<ol>
+<li><a href="/2021/05/15/building-llvm-project-with-ninja-on-macos.html">Build llvm-project on my laptop</a></li>
+<li>Create a hello-world VSCode Extension</li>
+<li>...</li>
+</ol>]]></content><author><name></name></author><category term="llvm" /><category term="VSCode" /><summary type="html"><![CDATA[\%x.next = add i64 \%x, 1, \!dbg \!42]]></summary></entry></feed>
