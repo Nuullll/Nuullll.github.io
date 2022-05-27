@@ -1,0 +1,13 @@
+.friends {
+  font-size: 10px;
+  @include themed() {
+     color: lighten(t('background-color'), 5%);
+  }
+
+  & > a {
+    @include themed() {
+         color: lighten(t('background-color'), 10%);
+    }
+    text-decoration: underline;
+  }
+}
